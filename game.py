@@ -17,7 +17,11 @@ hopping_size = 10
 step_hopping_size = -5
 font1 = pygame.font.Font(None, 74)
 select = ['', 'игра', 'магазин', 'выход']
-hints = ['also try Zametki', 'also try SimplePainter', 'some cheats: uuddLrLra1a2', 'a gde?']
+hints = ['also try Zametki', 'also try SimpleDraw', 'some cheats: uuddLrLra1a2', 'a gde?', 'also try OГЭ по химии',
+         'play PowerPoint', 'Ты сделал все уроки?', 'also try Яндекс Лицей', 'RAK', 'CANCER', 'Jq, yt nf hfcrkflrf',
+         'MOM?', 'WE NEED 100$', 'Я сдам физику, честно', 'y = kx + b', 'Saratow2077', 'Roll D20', '3,14',
+         'This sentence is a lie', 'Trust us', 'Wellcome to the underground', 'Hello World', 'Are you sure?', '(*)_(*)',
+         'also try PyCharm']
 hint = random.choice(hints)
 cur_select = select[0]
 move_selected = 0
