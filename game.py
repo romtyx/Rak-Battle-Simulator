@@ -37,12 +37,49 @@ cheat_code = [119, 119, 115, 115, 97, 100, 97, 100, 113, 101]
 class MainRak(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = ''
-        self.speed = 0
+        self.image = pygame.image.load("images/просто рак.png").convert_alpha()
+        scale = pygame.transform.scale(self.image, (50, 50))
+        self.image = scale
+        self.original_image = self.image
+        self.speed = 3
         self.x = 100
         self.y = 400
-        self.hp = 0
+        self.hp = 100
+        self.scale = 50
+        self.up = pygame.K_w
+        self.down = pygame.K_s
+        self.left = pygame.K_a
+        self.right = pygame.K_d
+        self.abikukles = pygame.K_e
+        self.ulpotato = pygame.K_q
+        self.reverse = False
 
+    def update(self):
+        keys = pygame.key.get_pressed()
+        if keys[self.up]:
+            self.y -= self.speed
+        if keys[self.down]:
+            self.y += self.speed
+        if keys[self.left]:
+            self.x -= self.speed
+        if keys[self.right]:
+            self.x += self.speed
+        if self.y >= 800:
+            self.y = 800
+        if self.y <= 0:
+            self.y = 0
+        if self.x >= 1500:
+            self.x = 1500
+        if self.x >= 0:
+            self.x = 0
+
+        if self.x > 675:
+            self.image = pygame.transform.flip(self.original_image, True, False)
+        else:
+            self.image = self.original_image
+
+    def shoot(self):
+        pass
 
 
 def show_menu():
@@ -85,7 +122,7 @@ def select_game():
 def menu_loop():
     if cur_select == select[0]:
         show_menu()
-    if cur_select == select[-1]:
+    if cur_select == select[3]:
         print('Пока, спасибо что играли')
         pygame.quit()
         sys.exit()
@@ -95,6 +132,13 @@ def menu_loop():
         pass
 
 
+def infinity_game():
+    print('1123')
+    screen.fill(BLACK)
+    screen.blit(rak.image, [rak.x, rak.y])
+
+
+rak = MainRak()
 FPS = 60
 game = True
 
@@ -103,28 +147,33 @@ while game:
         if event.type == pygame.QUIT:
             game = False
         if event.type == pygame.KEYDOWN:
-            if cur_select == select[0]:
-                if event.key == pygame.K_DOWN:
-                    move_selected = (move_selected + 1) % (len(select) - 1)
-                if event.key == pygame.K_UP:
-                    move_selected = (move_selected - 1) % (len(select) - 1)
-                if event.key == pygame.K_SPACE:
-                    cur_select = select[move_selected + 1]
-                    print(cur_select)
-            elif cur_select == select[1]:
-                if event.key == pygame.K_DOWN:
-                    move_selected_game = (move_selected_game + 1) % (len(select_type_games) - 1)
-                if event.key == pygame.K_UP:
-                    move_selected_game = (move_selected_game - 1) % (len(select_type_games) - 1)
-                if event.key == pygame.K_SPACE:
-                    cur_select_game = select_type_games[move_selected_game + 1]
-                    print(cur_select_game)
+            if cur_select_game == '':
+                if cur_select == select[0]:
+                    if event.key == pygame.K_DOWN:
+                        move_selected = (move_selected + 1) % (len(select) - 1)
+                    if event.key == pygame.K_UP:
+                        move_selected = (move_selected - 1) % (len(select) - 1)
+                    if event.key == pygame.K_SPACE:
+                        cur_select = select[move_selected + 1]
+                        print(cur_select)
+
+                elif cur_select == select[1]:
+                    if event.key == pygame.K_DOWN:
+                        move_selected_game = (move_selected_game + 1) % (len(select_type_games) - 1)
+                    if event.key == pygame.K_UP:
+                        move_selected_game = (move_selected_game - 1) % (len(select_type_games) - 1)
+                    if event.key == pygame.K_SPACE:
+                        cur_select_game = select_type_games[move_selected_game + 1]
+                        print(cur_select_game)
+
             if cur_select_game == select_type_games[2]:
-                screen.fill(WHITE)
+                infinity_game()
+
             if event.key == pygame.K_ESCAPE:
                 hint = random.choice(hints)
                 move_selected = 0
                 cur_select = select[0]
+
             for i in range(len(last_moves)):
                 try:
                     last_moves[i] = last_moves[i + 1]
@@ -134,4 +183,5 @@ while game:
             if last_moves == cheat_code:
                 print('YOU CHEATER!!!')
     menu_loop()
+    pygame.display.flip()
     clock.tick(FPS)
