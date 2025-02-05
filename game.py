@@ -38,21 +38,24 @@ class MainRak(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("images/просто рак.png").convert_alpha()
-        scale = pygame.transform.scale(self.image, (50, 50))
+        scale = pygame.transform.scale(self.image, (150, 150))
         self.image = scale
         self.original_image = self.image
+        # self.rect = self.image.get_rect(center=(self.x, self.y))
         self.speed = 3
-        self.x = 100
-        self.y = 400
+        self.x = 750
+        self.y = 200
         self.hp = 100
         self.scale = 50
         self.up = pygame.K_w
         self.down = pygame.K_s
         self.left = pygame.K_a
         self.right = pygame.K_d
+        self.shot = pygame.K_SPACE
         self.abikukles = pygame.K_e
         self.ulpotato = pygame.K_q
         self.reverse = False
+        self.kd = pygame.time.get_ticks()
 
     def update(self):
         keys = pygame.key.get_pressed()
@@ -64,22 +67,59 @@ class MainRak(pygame.sprite.Sprite):
             self.x -= self.speed
         if keys[self.right]:
             self.x += self.speed
+            # self.rect = self.image.get_rect(center=(self.x, self.y))
+            # print(self.rect)
+            # print(self.x, self.y)
         if self.y >= 800:
             self.y = 800
         if self.y <= 0:
             self.y = 0
         if self.x >= 1500:
             self.x = 1500
-        if self.x >= 0:
+        if self.x <= 0:
             self.x = 0
 
         if self.x > 675:
             self.image = pygame.transform.flip(self.original_image, True, False)
+            self.reverse = True
         else:
             self.image = self.original_image
+            self.reverse = False
+
+        if cur_select_game != select_type_games[0] and keys[self.shot] and self.kd + 500 < pygame.time.get_ticks():
+            self.kd = pygame.time.get_ticks()
+            self.shoot()
+
+    def starting_game(self):
+        self.x = 100
+        self.y = 400
 
     def shoot(self):
-        pass
+        if self.reverse:
+            bullet = Bullet(self.x, self.y + 75, -1)
+        else:
+            bullet = Bullet(self.x + 75, self.y + 75, 1)
+        all_stars.add(bullet)
+
+
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self, x, y, rev):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("images/пуля просто рак.png").convert_alpha()
+        scale = pygame.transform.scale(self.image, (100, 50))
+        self.image = scale
+        if rev == -1:
+            self.image = pygame.transform.flip(self.image, True, False)
+        # self.speedx = 15 * rev
+        self.speedx = 0
+        self.rect = self.image.get_rect(center=(x, y))
+        self.pseudo_rect = self.image.get_rect()
+
+    def update(self):
+        self.rect.x += self.speedx
+        if self.rect.left > 1700:
+            self.kill()
+        screen.blit(self.image, self.rect)
 
 
 def show_menu():
@@ -127,22 +167,25 @@ def menu_loop():
         pygame.quit()
         sys.exit()
     if cur_select == select[1]:
-        select_game()
+        if cur_select_game == '':
+            select_game()
     if cur_select == select[2]:
         pass
 
 
 def infinity_game():
-    print('1123')
-    screen.fill(BLACK)
+    screen.fill(WHITE)
     screen.blit(rak.image, [rak.x, rak.y])
+    pygame.display.flip()
 
 
+all_stars = pygame.sprite.Group()
 rak = MainRak()
 FPS = 60
 game = True
 
 while game:
+    menu_loop()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             game = False
@@ -165,23 +208,26 @@ while game:
                     if event.key == pygame.K_SPACE:
                         cur_select_game = select_type_games[move_selected_game + 1]
                         print(cur_select_game)
-
-            if cur_select_game == select_type_games[2]:
-                infinity_game()
+                        print(cur_select_game == select_type_games[2])
+                        rak.starting_game()
 
             if event.key == pygame.K_ESCAPE:
                 hint = random.choice(hints)
                 move_selected = 0
                 cur_select = select[0]
+                cur_select_game = select_type_games[0]
 
             for i in range(len(last_moves)):
                 try:
                     last_moves[i] = last_moves[i + 1]
                 except IndexError:
                     last_moves[-1] = event.key
-            print(last_moves)
+            # print(last_moves)
             if last_moves == cheat_code:
                 print('YOU CHEATER!!!')
-    menu_loop()
+    if cur_select_game == select_type_games[2]:
+        infinity_game()
+    rak.update()
+    all_stars.update()
     pygame.display.flip()
     clock.tick(FPS)
