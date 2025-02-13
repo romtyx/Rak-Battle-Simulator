@@ -41,7 +41,7 @@ class MainRak(pygame.sprite.Sprite):
         scale = pygame.transform.scale(self.image, (150, 150))
         self.image = scale
         self.original_image = self.image
-        # self.rect = self.image.get_rect(center=(self.x, self.y))
+        #self.rect = self.image.get_rect(center=(self.x, self.y))
         self.speed = 3
         self.x = 750
         self.y = 200
@@ -91,8 +91,8 @@ class MainRak(pygame.sprite.Sprite):
             self.shoot()
 
     def starting_game(self):
-        self.x = 100
-        self.y = 400
+        self.x = 650
+        self.y = 300
 
     def shoot(self):
         if self.reverse:
@@ -110,8 +110,9 @@ class Bullet(pygame.sprite.Sprite):
         self.image = scale
         if rev == -1:
             self.image = pygame.transform.flip(self.image, True, False)
-        # self.speedx = 15 * rev
-        self.speedx = 0
+            self.speedx = 15 * rev
+        else:
+            self.speedx = 15
         self.rect = self.image.get_rect(center=(x, y))
         self.pseudo_rect = self.image.get_rect()
 
@@ -176,6 +177,7 @@ def menu_loop():
 def infinity_game():
     screen.fill(WHITE)
     screen.blit(rak.image, [rak.x, rak.y])
+    all_stars.draw(screen)
     pygame.display.flip()
 
 
@@ -216,6 +218,7 @@ while game:
                 move_selected = 0
                 cur_select = select[0]
                 cur_select_game = select_type_games[0]
+                all_stars.empty()
 
             for i in range(len(last_moves)):
                 try:
