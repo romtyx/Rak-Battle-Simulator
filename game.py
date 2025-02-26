@@ -19,7 +19,7 @@ background = ''
 hopping_size = 10
 step_hopping_size = -5
 font1 = pygame.font.Font(None, 74)
-select = ['', 'игра', 'настройки', 'выход']
+select = ['', 'игра', 'настройки', 'выход', 'game_over']
 select_type_games = ['', 'сюжет', 'бесконечный', 'дуэль']
 
 hints = ['also try Zametki', 'also try SimpleDraw', 'some cheats: uuddLrLra1a2', 'a gde?', 'also try OГЭ по химии',
@@ -50,8 +50,6 @@ class MainRak(pygame.sprite.Sprite):
         self.original_image = self.image
         self.rect = self.image.get_rect()
         self.speed = 3
-        self.x = 750
-        self.y = 200
         self.hp = 100
         self.scale = 50
         self.up = pygame.K_w
@@ -65,28 +63,31 @@ class MainRak(pygame.sprite.Sprite):
         self.kd = pygame.time.get_ticks()
 
     def update(self):
+        global infinity_count
+        if self.hp <= 0:
+            game_over(infinity_count)
         keys = pygame.key.get_pressed()
         if keys[self.up]:
-            self.y -= self.speed
+            self.rect.y -= self.speed
         if keys[self.down]:
-            self.y += self.speed
+            self.rect.y += self.speed
         if keys[self.left]:
-            self.x -= self.speed
+            self.rect.x -= self.speed
         if keys[self.right]:
-            self.x += self.speed
+            self.rect.x += self.speed
             # self.rect = self.image.get_rect(center=(self.x, self.y))
             # print(self.rect)
             # print(self.x, self.y)
-        if self.y >= H - 150:
-            self.y = H - 150
-        if self.y <= 0:
-            self.y = 0
-        if self.x >= W - 150:
-            self.x = W - 150
-        if self.x <= 0:
-            self.x = 0
+        if self.rect.y >= H - 150:
+            self.rect.y = H - 150
+        if self.rect.y <= 0:
+            self.rect.y = 0
+        if self.rect.x >= W - 150:
+            self.rect.x = W - 150
+        if self.rect.x <= 0:
+            self.rect.x = 0
 
-        if self.x > 675:
+        if self.rect.x > 675:
             self.image = pygame.transform.flip(self.original_image, True, False)
             self.reverse = True
         else:
@@ -97,15 +98,31 @@ class MainRak(pygame.sprite.Sprite):
             self.kd = pygame.time.get_ticks()
             self.shoot()
 
+        bullets_hits = pygame.sprite.groupcollide(all_bullets, all_enemies, True, False)
+        rak_hits = pygame.sprite.spritecollide(self, all_enemies, False)
+        for bullets, enemys in bullets_hits.items():
+            for e in enemys:
+                e.hp -= 5
+                if e.hp <= 0:
+                    infinity_count += e.cost
+                    print(infinity_count)
+                    e.kill()
+
+        for e in rak_hits:
+            self.hp -= e.hp
+            print(self.hp)
+            e.kill()
+
     def starting_game(self):
-        self.x = 650
-        self.y = 300
+        self.rect.x = 650
+        self.rect.y = 300
+        self.hp = 100
 
     def shoot(self, vy=0):
         if self.reverse:
-            bullet = Bullet(self.x, self.y + 75, -1, vy)
+            bullet = Bullet(self.rect.x, self.rect.y + 75, -1, vy)
         else:
-            bullet = Bullet(self.x + 75, self.y + 75, 1, vy)
+            bullet = Bullet(self.rect.x + 150, self.rect.y + 75, 1, vy)
         all_bullets.add(bullet)
 
 
@@ -160,10 +177,35 @@ class MainEnemy(pygame.sprite.Sprite):
             self.kill()
 
 
+class Giant(MainEnemy):
+    def __init__(self):
+        super().__init__()
+        self.cost = 20
+        self.image = pygame.image.load("images/рыба(она просто есть).png").convert_alpha()
+        scale = pygame.transform.scale(self.image, (800, H - 50))
+        self.image = scale
+        if self.rev == 1:
+            self.image = pygame.transform.flip(self.image, True, False)
+        self.rect = self.image.get_rect()
+        self.rect.x = (W + 950) * self.rev - 850
+        self.rect.y = 5
+        self.hp = 50
+        self.speed = 1
+
+    def update(self):
+        if self.rev == 0:
+            self.rect.x += self.speed
+        else:
+            self.rect.x -= self.speed
+
+        if self.rect.x > W + 1000 or self.rect.x < -1000:
+            self.kill()
+
+
 def infinity_game():
     global wave, old_wave, infinity_count
     screen.fill(WHITE)
-    screen.blit(rak.image, [rak.x, rak.y])
+    screen.blit(rak.image, rak.rect)
     all_enemies.draw(screen)
     all_bullets.draw(screen)
     # я понял что рект это ТОЧНО верхний левый угол картинки
@@ -171,30 +213,25 @@ def infinity_game():
 
     timer = pygame.time.get_ticks()
     stop = random.randint(0, 500)
-    a = [MainEnemy()]
+    r = random.randint(0, 100)
+    if r < 40:
+        a = Giant()
+    else:
+        a = MainEnemy()
     if timer + stop < pygame.time.get_ticks():
         print(wave, 1)
-        enemy = random.choice(a)
+        enemy = a
         cost = enemy.cost
         if wave - cost >= 0:
             wave -= cost
             all_enemies.add(enemy)
             timer = pygame.time.get_ticks()
-            stop = random.randint(0, 1300)
+            stop = random.randint(0, 500)
         print(wave, 2)
     if wave <= 0:
         timer = pygame.time.get_ticks() + 1000
-        old_wave *= 2
+        old_wave *= 4
         wave = old_wave
-
-    bullets_hit = pygame.sprite.groupcollide(all_bullets, all_enemies, True, False)
-    for bullets, enemys in bullets_hit.items():
-        for e in enemys:
-            e.hp -= 5
-            if e.hp <= 0:
-                infinity_count += e.cost
-                print(infinity_count)
-                e.kill()
 
 
 def show_menu():
@@ -248,6 +285,14 @@ def menu_loop():
         pass
 
 
+def game_over(score):
+    global cur_select, cur_select_game
+    cur_select = select[4]
+    cur_select_game = select_type_games[0]
+    screen.fill(BLACK)
+    screen.blit(font1.render(f'Вы умерли, ваш счёт: {score}', True, (200, 10, 10)), (W // 2 - 350, H // 2 - 100))
+
+
 def kombo_check():
     if last_moves == cheat_code:
         print('YOU CHEATER!!!')
@@ -257,11 +302,9 @@ def kombo_check():
         rak.shoot(vy=-4)
 
 
-just_person = pygame.sprite.Group()
 all_bullets = pygame.sprite.Group()
 all_enemies = pygame.sprite.Group()
 rak = MainRak()
-just_person.add(rak)
 FPS = 60
 game = True
 
@@ -293,11 +336,13 @@ while game:
                         rak.starting_game()
 
             if event.key == pygame.K_ESCAPE:
+                rak.hp = 100
                 hint = random.choice(hints)
                 move_selected = 0
                 cur_select = select[0]
                 cur_select_game = select_type_games[0]
                 all_bullets.empty()
+                all_enemies.empty()
 
             for i in range(len(last_moves)):
                 try:
