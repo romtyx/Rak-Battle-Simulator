@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-import time
+# import time
 
 clock = pygame.time.Clock()
 
@@ -35,6 +35,7 @@ move_selected = 0
 move_selected_game = 0
 last_moves = ['', '', '', '', '', '', '', '', '', '']
 cheat_code = [119, 119, 115, 115, 97, 100, 97, 100, 113, 101]
+triple_shot = [97, 100, 32]
 infinity_count = 0
 wave = 10
 old_wave = wave
@@ -100,16 +101,16 @@ class MainRak(pygame.sprite.Sprite):
         self.x = 650
         self.y = 300
 
-    def shoot(self):
+    def shoot(self, vy=0):
         if self.reverse:
-            bullet = Bullet(self.x, self.y + 75, -1)
+            bullet = Bullet(self.x, self.y + 75, -1, vy)
         else:
-            bullet = Bullet(self.x + 75, self.y + 75, 1)
+            bullet = Bullet(self.x + 75, self.y + 75, 1, vy)
         all_bullets.add(bullet)
 
 
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y, rev):
+    def __init__(self, x, y, rev, vy):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("images/пуля просто рак.png").convert_alpha()
         scale = pygame.transform.scale(self.image, (100, 50))
@@ -122,10 +123,12 @@ class Bullet(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(x, y))
         self.pseudo_rect = self.image.get_rect()
         self.damage = 5
+        self.vy = vy
 
     def update(self):
         self.rect.x += self.speedx
-        if self.rect.left > 1700:
+        self.rect.y += self.vy
+        if self.rect.left > W or self.rect.right < 0 or self.rect.bottom < 0 or self.rect.top > H:
             self.kill()
 
 
@@ -158,6 +161,43 @@ class MainEnemy(pygame.sprite.Sprite):
 
         if self.rect.x > W + 500 or self.rect.x < -500:
             self.kill()
+
+
+def infinity_game():
+    global wave, old_wave, infinity_count
+    screen.fill(WHITE)
+    screen.blit(rak.image, [rak.x, rak.y])
+    all_enemies.draw(screen)
+    all_bullets.draw(screen)
+    # я понял что рект это ТОЧНО верхний левый угол картинки
+    pygame.display.flip()
+
+    timer = pygame.time.get_ticks()
+    stop = random.randint(0, 500)
+    a = [MainEnemy()]
+    if timer + stop < pygame.time.get_ticks():
+        print(wave, 1)
+        enemy = random.choice(a)
+        cost = enemy.cost
+        if wave - cost >= 0:
+            wave -= cost
+            all_enemies.add(enemy)
+            timer = pygame.time.get_ticks()
+            stop = random.randint(0, 1300)
+        print(wave, 2)
+    if wave <= 0:
+        timer = pygame.time.get_ticks() + 1000
+        old_wave *= 2
+        wave = old_wave
+
+    bullets_hit = pygame.sprite.groupcollide(all_bullets, all_enemies, True, False)
+    for bullets, enemys in bullets_hit.items():
+        for e in enemys:
+            e.hp -= 5
+            if e.hp <= 0:
+                infinity_count += e.cost
+                print(infinity_count)
+                e.kill()
 
 
 def show_menu():
@@ -211,48 +251,20 @@ def menu_loop():
         pass
 
 
-def infinity_game():
-    global wave, old_wave, infinity_count
-    screen.fill(WHITE)
-    screen.blit(rak.image, [rak.x, rak.y])
-    all_enemys.draw(screen)
-    all_bullets.draw(screen)
-    # pygame.draw.rect(screen, (255, 0, 0), (enemy.rect.x, enemy.rect.y, 1, 1))
-    # я понял что рект это ТОЧНО верхний левый угол картинки
-    pygame.display.flip()
-
-    timer = pygame.time.get_ticks()
-    stop = random.randint(0, 1300)
-    a = [MainEnemy()]
-    if timer + stop < pygame.time.get_ticks():
-        print(wave, 1)
-        enemy = random.choice(a)
-        cost = enemy.cost
-        if wave - cost >= 0:
-            wave -= cost
-            all_enemys.add(enemy)
-            timer = pygame.time.get_ticks()
-            stop = random.randint(0, 1300)
-        print(wave, 2)
-    if wave <= 0:
-        timer = pygame.time.get_ticks() + 1000
-        old_wave *= 2
-        wave = old_wave
-
-    bullets_hit = pygame.sprite.groupcollide(all_bullets, all_enemys, True, False)
-    for bullets, enemys in bullets_hit.items():
-        for e in enemys:
-            e.hp -= 5
-            if e.hp <= 0:
-                infinity_count += e.cost
-                print(infinity_count)
-                e.kill()
+def kombo_check():
+    if last_moves == cheat_code:
+        print('YOU CHEATER!!!')
+    if last_moves[-3:] == triple_shot:
+        rak.shoot(vy=4)
+        rak.shoot(vy=0)
+        rak.shoot(vy=-4)
 
 
-
+just_person = pygame.sprite.Group()
 all_bullets = pygame.sprite.Group()
-all_enemys = pygame.sprite.Group()
+all_enemies = pygame.sprite.Group()
 rak = MainRak()
+just_person.add(rak)
 FPS = 60
 game = True
 
@@ -295,13 +307,12 @@ while game:
                     last_moves[i] = last_moves[i + 1]
                 except IndexError:
                     last_moves[-1] = event.key
-            # print(last_moves)
-            if last_moves == cheat_code:
-                print('YOU CHEATER!!!')
+            print(last_moves)
+            kombo_check()
     if cur_select_game == select_type_games[2]:
         infinity_game()
     rak.update()
     all_bullets.update()
-    all_enemys.update()
+    all_enemies.update()
     pygame.display.flip()
     clock.tick(FPS)
