@@ -148,9 +148,6 @@ class MainEnemy(pygame.sprite.Sprite):
         self.rect.y = random.randint(0, H - 150)
         self.hp = 10
         self.cur_hp = self.hp
-        # self.rect.x = 750
-        # self.rect.y = 200
-        # self.speed = 0
         self.speed = 2
 
     def update(self):
