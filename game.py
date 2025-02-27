@@ -214,7 +214,7 @@ def infinity_game():
     timer = pygame.time.get_ticks()
     stop = random.randint(0, 500)
     r = random.randint(0, 100)
-    if r < 40:
+    if r < 5:
         a = Giant()
     else:
         a = MainEnemy()
@@ -333,6 +333,8 @@ while game:
                         cur_select_game = select_type_games[move_selected_game + 1]
                         print(cur_select_game)
                         print(cur_select_game == select_type_games[2])
+                        infinity_count = 0
+                        wave = 10
                         rak.starting_game()
 
             if event.key == pygame.K_ESCAPE:
