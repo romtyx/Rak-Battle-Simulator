@@ -37,10 +37,11 @@ cur_select = select[0]
 cur_select_game = select_type_games[0]
 move_selected = 0
 move_selected_game = 0
+selected_level = 0
 last_moves = ['', '', '', '', '', '', '', '', '', '']
 cheat_code = [119, 119, 115, 115, 97, 100, 97, 100, 113, 101]
 triple_shot = [97, 100, 32]
-infinity_count = 0
+score_count = 0
 wave = 10
 old_wave = wave
 
@@ -70,9 +71,9 @@ class MainRak(pygame.sprite.Sprite):
         self.cgif = 0
 
     def update(self):
-        global infinity_count
+        global score_count
         if self.hp <= 0:
-            game_over(infinity_count)
+            game_over()
         keys = pygame.key.get_pressed()
         if keys[self.up]:
             self.rect.y -= self.speed
@@ -82,9 +83,6 @@ class MainRak(pygame.sprite.Sprite):
             self.rect.x -= self.speed
         if keys[self.right]:
             self.rect.x += self.speed
-            # self.rect = self.image.get_rect(center=(self.x, self.y))
-            # print(self.rect)
-            # print(self.x, self.y)
         if self.rect.y >= H - 150:
             self.rect.y = H - 150
         if self.rect.y <= 0:
@@ -106,9 +104,6 @@ class MainRak(pygame.sprite.Sprite):
         if cur_select_game != select_type_games[0] and keys[self.shot] and self.kd < pygame.time.get_ticks():
             self.kd = pygame.time.get_ticks() + 500
             self.shoot()
-
-        # bullets_hits = pygame.sprite.groupcollide(all_bullets, all_enemies, True, False)
-        # bullets_hits_mask = pygame.sprite.collide_mask()
 
         for e in all_enemies:
             if pygame.sprite.collide_mask(self, e):
@@ -147,7 +142,7 @@ class Bullet(pygame.sprite.Sprite):
         self.vy = vy
 
     def update(self):
-        global infinity_count
+        global score_count
         self.rect.x += self.speedx
         self.rect.y += self.vy
         if self.rect.left > W or self.rect.right < 0 or self.rect.bottom < 0 or self.rect.top > H:
@@ -158,8 +153,8 @@ class Bullet(pygame.sprite.Sprite):
                 e.hp -= 5
                 self.kill()
                 if e.hp <= 0:
-                    infinity_count += e.cost
-                    print(infinity_count)
+                    score_count += e.cost
+                    print(score_count)
                     e.kill()
 
 
@@ -178,21 +173,20 @@ class MainEnemy(pygame.sprite.Sprite):
         self.rect.x = (W + 650) * self.rev - 400
         self.rect.y = random.randint(0, H - 150)
         self.mask = pygame.mask.from_surface(self.image)
-        self.hp = 10
-        self.cur_hp = self.hp
-        self.speed = 2
+        self.hp = 20
+        self.speedx = 2
 
     def update(self):
         if self.rev == 0:
-            self.rect.x += self.speed
+            self.rect.x += self.speedx
         else:
-            self.rect.x -= self.speed
+            self.rect.x -= self.speedx
 
         if self.rect.x > W + 500 or self.rect.x < -500:
             self.kill()
 
 
-class Giant(MainEnemy):
+class GiantEnemy(MainEnemy):
     def __init__(self):
         super().__init__()
         self.cost = 20
@@ -205,7 +199,7 @@ class Giant(MainEnemy):
         self.rect.x = (W + 950) * self.rev - 850
         self.rect.y = 5
         self.mask = pygame.mask.from_surface(self.image)
-        self.hp = 50
+        self.hp = 55
         self.speed = 1
 
     def update(self):
@@ -218,25 +212,52 @@ class Giant(MainEnemy):
             self.kill()
 
 
-def infinity_game():
-    global wave, old_wave, infinity_count
-    screen.fill(WHITE)
-    screen.blit(background, (0, 0))
+class KrabEnemy(MainEnemy):
+    def __init__(self):
+        super().__init__()
+        self.rev = random.choice([0, 1])
+        self.cost = 5
+        self.image = pygame.image.load("images/быстрый краб.png").convert_alpha()
+        scale = pygame.transform.scale(self.image, (200, 150))
+        self.image = scale
+        self.rect = self.image.get_rect()
+        self.rect.x = (W + 650) * self.rev - 400
+        self.rect.y = random.randint(0, H - 150)
+        self.mask = pygame.mask.from_surface(self.image)
+        self.speedx = 7
+        self.speedy = 0
+        self.time = pygame.time.get_ticks()
 
-    screen.blit(rak.image, rak.rect)
-    all_enemies.draw(screen)
-    all_bullets.draw(screen)
-    # я понял что рект это ТОЧНО верхний левый угол картинки
-    pygame.draw.rect(screen, BLACK, (50, H - 80, 320, 70))
-    pygame.draw.rect(screen, (200, 0, 0), (60, H - 70, 300, 50))
-    pygame.draw.rect(screen, (0, 200, 40), (60, H - 70, 300 * rak.hp / rak.maxhp, 50))
-    pygame.display.flip()
+    def update(self):
+        if self.time + 700 < pygame.time.get_ticks():
+            self.speedx = random.randint(-1, 3)
+            self.speedy = random.randint(-2, 2)
+            self.time = pygame.time.get_ticks()
+        if self.rev == 0:
+            self.rect.x += self.speedx
+        else:
+            self.rect.x -= self.speedx
+        self.rect.y += self.speedy
+
+        if self.rect.y < 0:
+            self.rect.y = 0
+        if self.rect.y > H - 150:
+            self.rect.y = H - 150
+
+        if self.rect.x > W + 500 or self.rect.x < -500:
+            self.kill()
+
+
+def infinity_game():
+    global wave, old_wave, score_count
 
     timer = pygame.time.get_ticks()
     stop = random.randint(0, 500)
     r = random.randint(0, 100)
     if r < 5:
-        a = Giant()
+        a = GiantEnemy()
+    elif r < 45:
+        a = KrabEnemy()
     else:
         a = MainEnemy()
     if timer + stop < pygame.time.get_ticks():
@@ -253,22 +274,78 @@ def infinity_game():
         timer = pygame.time.get_ticks() + 1000
         old_wave *= 4
         wave = old_wave
+    pygame.display.flip()
+
+
+level_info = {1: {'chance': [[100, 1]], 'cost': 30, 'min': 10}, 2: {'chance': [[95, 1], [5, 20]], 'cost': 60, 'min': 25},
+              3: {'chance': [[100, 5], [75, 5], [5, 20]], 'cost': 130, 'min': 50}}
+level_copy = level_info
+
+
+def levels(lvl):
+    global level_copy, score_count
+    timer = pygame.time.get_ticks()
+    stop = random.randint(0, 700)
+    r = random.randint(1, 100)
+    a = 1
+    for i in level_copy[lvl]['chance']:
+        if r <= i[0]:
+            a = i[1]
+    if a == 1:
+        enemy = MainEnemy()
+    elif a == 20:
+        enemy = GiantEnemy()
+    elif a == 5:
+        enemy = KrabEnemy()
+    if timer + stop < pygame.time.get_ticks():
+        if level_copy[lvl]['cost'] - a >= 0:
+            level_copy[lvl]['cost'] -= a
+            all_enemies.add(enemy)
+            timer = pygame.time.get_ticks()
+            stop = random.randint(0, 700)
+
+    if level_copy[lvl]['cost'] <= 0 and not all_enemies:
+        if score_count >= level_copy[lvl]['min']:
+            game_over()
+        else:
+            rak.hp = 0
+            rak.hp -= 100000000
+            game_over()
+
+
+def level_select():
+    global selected_level
+    title_text = font1.render('Выбор уровня:', True, BLACK)
+    lvl1 = font1.render('1', True, BLACK)
+    lvl2 = font1.render('2', True, BLACK)
+    lvl3 = font1.render('3', True, BLACK)
+    sp = []
+    for i in range(3):
+        sp.append(pygame.Rect(450 + 200 * i, 250, 180, 180))
+        pygame.draw.rect(screen, (140, 100, 0), sp[i])
+    screen.blit(title_text, (570, 50))
+    screen.blit(lvl1, (530, 300))
+    screen.blit(lvl2, (730, 300))
+    screen.blit(lvl3, (930, 300))
+    for i in sp:
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            if i.collidepoint(mouse_pos):
+                selected_level = sp.index(i) + 1
+                print(selected_level)
+    pygame.display.flip()
 
 
 def show_menu():
     global hopping_size, step_hopping_size
     font2 = pygame.font.Font(None, hopping_size)
-    screen.fill(WHITE)
-    screen.blit(background, (0, 0))
 
-    # title_text = font1.render('RAKBATTLESIMULATOR', True, BLACK)
     play_text = font1.render('Играть', True, BLACK)
     store_text = font1.render('Настройки', True, BLACK)
     quit_text = font1.render('Выход', True, BLACK)
     hopping_text = font2.render(hint, True, (255, 0, 0))
     rotated_text = pygame.transform.rotate(hopping_text, 20)
     selected = pygame.draw.rect(screen, (255, 0, 0), (600, 250 + 100 * move_selected, 10, 50))
-    # screen.blit(title_text, (440, 50))
     screen.blit(title, (400, 40))
     screen.blit(play_text, (650, 250))
     screen.blit(store_text, (650, 350))
@@ -282,8 +359,6 @@ def show_menu():
 
 
 def select_game():
-    screen.fill(WHITE)
-    screen.blit(background, (0, 0))
     title_text = font1.render('Режимы игры', True, BLACK)
     suj_text = font1.render('Сюжетный', True, BLACK)
     infi_text = font1.render('БЕСКОНЕЧНЫЙ!', True, BLACK)
@@ -306,21 +381,32 @@ def menu_loop():
     if cur_select == select[1]:
         if cur_select_game == '':
             select_game()
+        if cur_select_game == 'сюжет':
+            if selected_level == 0:
+                level_select()
     if cur_select == select[2]:
         pass
+    if cur_select == select[4]:
+        game_over()
 
 
-def game_over(score):
-    global cur_select, cur_select_game
+def game_over():
+    global cur_select, cur_select_game, selected_level, score_count
     cur_select = select[4]
     cur_select_game = select_type_games[0]
+    selected_level = 0
     screen.fill(BLACK)
-    screen.blit(font1.render(f'Вы умерли, ваш счёт: {score}', True, (200, 10, 10)), (W // 2 - 350, H // 2 - 100))
+    if rak.hp > 0:
+        text = 'Вы выйграли! Ваш счёт:'
+    else:
+        text = 'Вы проиграли, ваш счёт:'
+    screen.blit(font1.render(f'{text} {score_count}', True, (200, 10, 10)), (W // 2 - 350, H // 2 - 100))
+    pygame.display.flip()
 
 
 def kombo_check():
     if last_moves == cheat_code:
-        rak.hp += 10000
+        rak.hp += 500
         for i in range(10):
             rak.shoot(vy=5)
             rak.shoot(vy=4)
@@ -345,6 +431,8 @@ FPS = 60
 game = True
 
 while game:
+    screen.fill(WHITE)
+    screen.blit(background, (0, 0))
     menu_loop()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -369,7 +457,7 @@ while game:
                         cur_select_game = select_type_games[move_selected_game + 1]
                         print(cur_select_game)
                         print(cur_select_game == select_type_games[2])
-                        infinity_count = 0
+                        score_count = 0
                         wave = 10
                         rak.starting_game()
 
@@ -379,6 +467,8 @@ while game:
                 move_selected = 0
                 cur_select = select[0]
                 cur_select_game = select_type_games[0]
+                selected_level = 0
+                level_copy = level_info
                 all_bullets.empty()
                 all_enemies.empty()
 
@@ -387,10 +477,26 @@ while game:
                     last_moves[i] = last_moves[i + 1]
                 except IndexError:
                     last_moves[-1] = event.key
-            print(last_moves)
             kombo_check()
+
     if cur_select_game == select_type_games[2]:
+        screen.blit(rak.image, rak.rect)
+        all_enemies.draw(screen)
+        all_bullets.draw(screen)
+        pygame.draw.rect(screen, BLACK, (50, H - 80, 320, 70))
+        pygame.draw.rect(screen, (200, 0, 0), (60, H - 70, 300, 50))
+        pygame.draw.rect(screen, (0, 200, 40), (60, H - 70, 300 * rak.hp / rak.maxhp, 50))
         infinity_game()
+
+    if cur_select_game == select_type_games[1] and selected_level != 0:
+        screen.blit(rak.image, rak.rect)
+        all_enemies.draw(screen)
+        all_bullets.draw(screen)
+        pygame.draw.rect(screen, BLACK, (50, H - 80, 320, 70))
+        pygame.draw.rect(screen, (200, 0, 0), (60, H - 70, 300, 50))
+        pygame.draw.rect(screen, (0, 200, 40), (60, H - 70, 300 * rak.hp / rak.maxhp, 50))
+        levels(selected_level)
+
     rak.update()
     all_bullets.update()
     all_enemies.update()
