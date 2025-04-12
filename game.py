@@ -22,6 +22,7 @@ title = pygame.image.load('images/НАДПИСЬ RBs.png').convert_alpha()
 hopping_size = 10
 step_hopping_size = -5
 font1 = pygame.font.Font(None, 74)
+font = pygame.font.Font(None, 30)
 select = ['', 'игра', 'настройки', 'выход', 'game_over']
 select_type_games = ['', 'сюжет', 'бесконечный', 'дуэль']
 
@@ -30,7 +31,7 @@ hints = ['also try Zametki', 'also try SimpleDraw', 'some cheats: uuddLrLra1a2',
          'MOM?', 'WE NEED 100$', 'Я сдам физику, честно', 'y = kx + b', 'Saratow2077', 'Roll D20', '3,14',
          'This sentence is a lie', 'Trust us', 'Wellcome to the underground', 'Hello World', 'Are you sure?', '(*)_(*)',
          'also try PyCharm', 'AAAAAAAAA', 'Plant B', 'bye', 'cake is a lie', 'spaceeeee...', 'also try Alt + f4',
-         'power of 3 is Lr shot']
+         'power of 3 is Lr shot', 'I am the danger', 'yoyoyo 1483 to 3 to 6 to 9', 'Better call Soul']
 
 hint = random.choice(hints)
 cur_select = select[0]
@@ -39,16 +40,28 @@ move_selected = 0
 move_selected_game = 0
 selected_level = 0
 last_moves = ['', '', '', '', '', '', '', '', '', '']
-cheat_code = [119, 119, 115, 115, 97, 100, 97, 100, 113, 101]
-triple_shot = [97, 100, 32]
 score_count = 0
 wave = 10
 old_wave = wave
+
+with open('bd.json', 'r') as f:
+    keybindings = json.load(f)
 
 
 class MainRak(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+        # with open('bd.json', 'r') as f:
+        #     keybindings = json.load(f)
+        print(keybindings)
+        print(keybindings.keys())
+        self.up = getattr(pygame, f"K_{keybindings['up']}")
+        self.down = getattr(pygame, f"K_{keybindings['down']}")
+        self.left = getattr(pygame, f"K_{keybindings['left']}")
+        self.right = getattr(pygame, f"K_{keybindings['right']}")
+        self.shot = getattr(pygame, f"K_{keybindings['shot']}")
+        self.abikukles = getattr(pygame, f"K_{keybindings['abikukles']}")
+        self.ulpotato = getattr(pygame, f"K_{keybindings['ulpotato']}")
         self.image = pygame.image.load("images/просто рак.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (150, 150))
         self.original_image = self.image
@@ -58,17 +71,26 @@ class MainRak(pygame.sprite.Sprite):
         self.maxhp = 100
         self.hp = 100
         self.scale = 50
-        self.up = pygame.K_w
-        self.down = pygame.K_s
-        self.left = pygame.K_a
-        self.right = pygame.K_d
-        self.shot = pygame.K_SPACE
-        self.abikukles = pygame.K_e
-        self.ulpotato = pygame.K_q
+        # self.up = pygame.K_w
+        # self.down = pygame.K_s
+        # self.left = pygame.K_a
+        # self.right = pygame.K_d
+        # self.shot = pygame.K_SPACE
+        # self.abikukles = pygame.K_e
+        # self.ulpotato = pygame.K_q
         self.reverse = False
         self.kd = pygame.time.get_ticks() + 500
         self.gif = pygame.time.get_ticks()
         self.cgif = 0
+
+    def keys_update(self):
+        self.up = getattr(pygame, f"K_{keybindings['up']}")
+        self.down = getattr(pygame, f"K_{keybindings['down']}")
+        self.left = getattr(pygame, f"K_{keybindings['left']}")
+        self.right = getattr(pygame, f"K_{keybindings['right']}")
+        self.shot = getattr(pygame, f"K_{keybindings['shot']}")
+        self.abikukles = getattr(pygame, f"K_{keybindings['abikukles']}")
+        self.ulpotato = getattr(pygame, f"K_{keybindings['ulpotato']}")
 
     def update(self):
         global score_count
@@ -385,7 +407,7 @@ def menu_loop():
             if selected_level == 0:
                 level_select()
     if cur_select == select[2]:
-        pass
+        settings_menu()
     if cur_select == select[4]:
         game_over()
 
@@ -405,6 +427,8 @@ def game_over():
 
 
 def kombo_check():
+    cheat_code = [rak.up, rak.up, rak.down, rak.down, rak.left, rak.right, rak.left, rak.right, rak.ulpotato, rak.abikukles]
+    triple_shot = [rak.left, rak.right, rak.shoot()]
     if last_moves == cheat_code:
         rak.hp += 500
         for i in range(10):
@@ -424,6 +448,84 @@ def kombo_check():
         rak.shoot(vy=-4)
 
 
+def settings_menu():
+    global hint, move_selected, cur_select, cur_select_game
+    running = True
+    selected_index = 0
+    keys_to_change = list(keybindings.keys())
+
+    while running:
+        screen.blit(background, (0, 0))
+        title_surface = font.render("Настройки", True, (0, 0, 0))
+        screen.blit(title_surface, (W // 2 - title_surface.get_width() // 2, 50))
+
+        # Отображение списка действий и кнопок
+        for index, action in enumerate(keys_to_change):
+            button_text = f"{action}: {keybindings[action]}"
+            text_surface = font.render(button_text, True, (0, 0, 0))
+            screen.blit(text_surface,
+                        (W // 2 - 70,
+                         100 + index * (30 + 10)))
+
+            # Отображение красного прямоугольника слева от текста для выделения выбранного действия
+            if index == selected_index:
+                pygame.draw.rect(screen, (255, 0, 0),
+                                 (W // 2 - 120,
+                                  100 + index * 40 - 10,
+                                  20,
+                                  30 + 10),
+                                 border_radius=5)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    selected_index -= 1
+                    if selected_index < 0:
+                        selected_index = len(keys_to_change) - 1
+
+                elif event.key == pygame.K_DOWN:
+                    selected_index += 1
+                    if selected_index >= len(keys_to_change):
+                        selected_index = 0
+
+                elif event.key == pygame.K_ESCAPE:
+                    hint = random.choice(hints)
+                    move_selected = 0
+                    cur_select = select[0]
+                    cur_select_game = select_type_games[0]
+                    running = False
+
+                elif event.key == pygame.K_SPACE:  # Кнопка подтверждения для переназначения
+                    action_to_change = keys_to_change[selected_index]
+                    keybindings[action_to_change] = "***"  # Заменяем на "***"
+
+                    waiting_for_key = True
+
+                    while waiting_for_key:
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                running = False
+                                waiting_for_key = False
+
+                            if event.type == pygame.KEYDOWN:
+                                new_key_name = pygame.key.name(event.key)
+                                if event.key == pygame.K_SPACE:
+                                    new_key_name = new_key_name.upper()
+                                keybindings[action_to_change] = new_key_name  # Назначаем новую кнопку
+                                waiting_for_key = False
+
+        pygame.display.flip()
+        pygame.time.Clock().tick(FPS)
+
+    with open('bd.json', 'w') as f:
+        json.dump(keybindings, f)
+    rak.keys_update()
+    # Сохранение изменений в JSON файл перед выходом из меню настроек
+
+
 all_bullets = pygame.sprite.Group()
 all_enemies = pygame.sprite.Group()
 rak = MainRak()
@@ -431,7 +533,6 @@ FPS = 60
 game = True
 
 while game:
-    screen.fill(WHITE)
     screen.blit(background, (0, 0))
     menu_loop()
     for event in pygame.event.get():
@@ -502,3 +603,5 @@ while game:
     all_enemies.update()
     pygame.display.flip()
     clock.tick(FPS)
+
+pygame.quit()
