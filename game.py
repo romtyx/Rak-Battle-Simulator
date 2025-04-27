@@ -271,14 +271,12 @@ class KindKalmar(pygame.sprite.Sprite):
 
         if cur_select_game != select_type_games[0] and last_moves[-1] == self.abikukles and self.abi_flag + self.kda < time.time():
             self.abi_flag = time.time()
-            # self.abikukle()
             self.abi_start = time.time()
 
         if self.abi_start + self.abi_time > time.time():
             self.speed = 10
         else:
             self.speed = 2
-
 
         for e in all_enemies:
             if pygame.sprite.collide_mask(self, e):
@@ -324,18 +322,23 @@ class Drobinka(Bullet):  # 187x150
         self.mask = pygame.mask.from_surface(self.image)
         self.damage = 15
         self.time_to_death = time.time()
+        self.est_probitie = False
 
     def update(self):
         global score_count
-        for e in all_enemies:
-            if time.time() - self.time_to_death >= 0.4:
-                if pygame.sprite.collide_mask(self, e):
-                    e.hp -= self.damage
-                    if e.hp <= 0:
-                        score_count += e.cost
-                        print(score_count)
-                        e.kill()
-                self.kill()
+        if not self.est_probitie:
+            for e in all_enemies:
+                print(time.time() - self.time_to_death)
+                if 0.3 > time.time() - self.time_to_death >= 0.2:
+                    self.est_probitie = True
+                    if pygame.sprite.collide_mask(self, e):
+                        e.hp -= self.damage
+                        if e.hp <= 0:
+                            score_count += e.cost
+                            print(score_count)
+                            e.kill()
+        if self.time_to_death + 0.5 < time.time():
+            self.kill()
 
 
 class MainEnemy(pygame.sprite.Sprite):
