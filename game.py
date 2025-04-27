@@ -1,12 +1,13 @@
 import time
-
 import pygame
 import sys
 import random
 import json
-# import time
 
 clock = pygame.time.Clock()
+
+# asddasdasdasd = time.time()
+# print(asddasdasdasd - time.time() + 5)
 
 W = 1500
 H = 800
@@ -64,7 +65,6 @@ class MainRak(pygame.sprite.Sprite):
         self.left = getattr(pygame, f"K_{keybindings['left']}")
         self.right = getattr(pygame, f"K_{keybindings['right']}")
         self.shot = getattr(pygame, f"K_{keybindings['shot']}")
-        print(self.shot)
         self.abikukles = getattr(pygame, f"K_{keybindings['abikukles']}")
         self.ulpotato = getattr(pygame, f"K_{keybindings['ulpotato']}")
         self.image = pygame.image.load("images/просто рак.png").convert_alpha()
@@ -79,8 +79,8 @@ class MainRak(pygame.sprite.Sprite):
         self.reverse = False
         self.shot_flag = pygame.time.get_ticks()
         self.kd = 500
-        self.abi_flag = pygame.time.get_ticks()
-        self.kda = 5000
+        self.abi_flag = time.time() - 15
+        self.kda = 15
         self.gif = pygame.time.get_ticks()
         self.cgif = 0
 
@@ -119,6 +119,11 @@ class MainRak(pygame.sprite.Sprite):
             self.shot_flag = pygame.time.get_ticks()
             self.shoot()
 
+        if cur_select_game != select_type_games[0] and last_moves[-1] == self.abikukles and int(self.abi_flag) + self.kda < int(time.time()):
+            self.abikukle()
+            last_moves[-1] = 'net'
+            print("MEGAHEAL")
+
         for e in all_enemies:
             if pygame.sprite.collide_mask(self, e):
                 self.hp -= e.hp
@@ -136,6 +141,10 @@ class MainRak(pygame.sprite.Sprite):
         else:
             bullet = Bullet(self.rect.x + 150, self.rect.y + 75, 1, vy)
         all_bullets.add(bullet)
+
+    def abikukle(self):
+        self.hp += (self.maxhp - self.hp) // 2
+        self.abi_flag = time.time()
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -265,7 +274,7 @@ class Drobinka(Bullet):  # 187x150
         self.rect = self.image.get_rect(center=(x, y))
         self.pseudo_rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
-        self.damage = 20
+        self.damage = 15
         self.time_to_death = pygame.time.get_ticks()
         self.update()
 
@@ -444,8 +453,7 @@ def levels(lvl):
         if infinity_count >= level_copy[lvl]['min']:
             game_over()
         else:
-            rak.hp = 0
-            rak.hp -= 100000000
+            rak.hp = -1
             game_over()
 
 
@@ -566,6 +574,9 @@ def hp_draw():
     pygame.draw.rect(screen, BLACK, (50, H - 80, 20 + 3 * rak.maxhp, 70))
     pygame.draw.rect(screen, (200, 0, 0), (60, H - 70, 3 * rak.maxhp, 50))
     pygame.draw.rect(screen, (0, 200, 40), (60, H - 70, 3 * rak.hp, 50))
+    # ---
+    pygame.draw.rect(screen, BLACK, (50, H - 105, 210, 20))
+    pygame.draw.rect(screen, (0, 150, 200), (55, H - 100, min(200, int(200 * (time.time() - rak.abi_flag) / rak.kda)), 10))
 
 
 def settings_menu():
@@ -586,13 +597,13 @@ def settings_menu():
             text_surface = font.render(button_text, True, (0, 0, 0))
             screen.blit(text_surface,
                         (W // 2 - 70,
-                         100 + index * (30 + 10)))
+                         150 + index * (30 + 10)))
 
             # Отображение красного прямоугольника слева от текста для выделения выбранного действия
             if index == selected_index:
                 pygame.draw.rect(screen, (255, 0, 0),
-                                 (W // 2 - 120,
-                                  100 + index * 40 - 10,
+                                 (W // 2 - 100,
+                                  150 + index * 40 - 10,
                                   20,
                                   30 + 10),
                                  border_radius=5)
@@ -620,8 +631,17 @@ def settings_menu():
                     running = False
 
                 elif event.key == pygame.K_SPACE:  # Кнопка подтверждения для переназначения
+                    screen.blit(background, (0, 0))
+                    title_surface = font1.render("Настройки", True, (0, 0, 0))
+                    screen.blit(title_surface, (W // 2 - title_surface.get_width() // 2, 50))
                     action_to_change = keys_to_change[selected_index]
                     keybindings[action_to_change] = "***"
+                    for index, action in enumerate(keys_to_change):
+                        button_text = f"{action}: {keybindings[action]}"
+                        text_surface = font.render(button_text, True, (0, 0, 0))
+                        screen.blit(text_surface,
+                                    (W // 2 - 70,
+                                     100 + index * (30 + 10)))
                     pygame.display.flip()
 
                     waiting_for_key = True
@@ -650,7 +670,7 @@ def settings_menu():
 
 all_bullets = pygame.sprite.Group()
 all_enemies = pygame.sprite.Group()
-rak = KindKalmar()
+rak = MainRak()
 FPS = 60
 game = True
 
