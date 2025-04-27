@@ -77,12 +77,23 @@ class MainRak(pygame.sprite.Sprite):
         self.hp = 100
         self.scale = 50
         self.reverse = False
-        self.shot_flag = pygame.time.get_ticks()
-        self.kd = 500
+        self.shot_flag = time.time()
+        self.kd = 1
         self.abi_flag = time.time() - 15
         self.kda = 15
         self.gif = pygame.time.get_ticks()
         self.cgif = 0
+
+    def keys_update(self):
+        self.up = getattr(pygame, f"K_{keybindings['up']}")
+        self.down = getattr(pygame, f"K_{keybindings['down']}")
+        self.left = getattr(pygame, f"K_{keybindings['left']}")
+        self.right = getattr(pygame, f"K_{keybindings['right']}")
+        self.shot = getattr(pygame, f"K_{keybindings['shot']}")
+        self.abikukles = getattr(pygame, f"K_{keybindings['abikukles']}")
+        self.ulpotato = getattr(pygame, f"K_{keybindings['ulpotato']}")
+        print(keybindings)
+        print(keybindings.keys())
 
     def update(self):
         if self.hp <= 0:
@@ -114,12 +125,12 @@ class MainRak(pygame.sprite.Sprite):
             self.reverse = False
             self.mask = pygame.mask.from_surface(self.image)
 
-        if cur_select_game != select_type_games[0] and keys[self.shot] and self.shot_flag + self.kd < pygame.time.get_ticks():
+        if cur_select_game != select_type_games[0] and keys[self.shot] and self.shot_flag + self.kd < time.time():
             print('ooooo')
-            self.shot_flag = pygame.time.get_ticks()
+            self.shot_flag = time.time()
             self.shoot()
 
-        if cur_select_game != select_type_games[0] and last_moves[-1] == self.abikukles and int(self.abi_flag) + self.kda < int(time.time()):
+        if cur_select_game != select_type_games[0] and last_moves[-1] == self.abikukles and self.abi_flag + self.kda < time.time():
             self.abikukle()
             last_moves[-1] = 'net'
             print("MEGAHEAL")
@@ -198,17 +209,30 @@ class KindKalmar(pygame.sprite.Sprite):
         self.original_image = self.image
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
-        self.speed = 3
+        self.speed = 2
         self.maxhp = 200
         self.hp = 100
         self.scale = 50
         self.reverse = False
-        self.shot_flag = pygame.time.get_ticks()
-        self.kd = 1000
-        self.abi_flag = pygame.time.get_ticks()
-        self.kda = 5000
+        self.shot_flag = time.time()
+        self.kd = 3
+        self.abi_flag = time.time() - 15
+        self.kda = 2
+        self.abi_start = 0
+        self.abi_time = 0.4
         self.gif = pygame.time.get_ticks()
         self.cgif = 0
+
+    def keys_update(self):
+        self.up = getattr(pygame, f"K_{keybindings['up']}")
+        self.down = getattr(pygame, f"K_{keybindings['down']}")
+        self.left = getattr(pygame, f"K_{keybindings['left']}")
+        self.right = getattr(pygame, f"K_{keybindings['right']}")
+        self.shot = getattr(pygame, f"K_{keybindings['shot']}")
+        self.abikukles = getattr(pygame, f"K_{keybindings['abikukles']}")
+        self.ulpotato = getattr(pygame, f"K_{keybindings['ulpotato']}")
+        print(keybindings)
+        print(keybindings.keys())
 
     def update(self):
         if self.hp <= 0:
@@ -240,9 +264,21 @@ class KindKalmar(pygame.sprite.Sprite):
             self.reverse = True
             self.mask = pygame.mask.from_surface(self.image)
 
-        if cur_select_game != select_type_games[0] and keys[self.shot] and self.shot_flag + self.kd < pygame.time.get_ticks():
-            self.shot_flag = pygame.time.get_ticks() + self.kd
+        if cur_select_game != select_type_games[0] and keys[self.shot] and self.shot_flag + self.kd < time.time():
+            print('ooooo')
+            self.shot_flag = time.time()
             self.shoot()
+
+        if cur_select_game != select_type_games[0] and last_moves[-1] == self.abikukles and self.abi_flag + self.kda < time.time():
+            self.abi_flag = time.time()
+            # self.abikukle()
+            self.abi_start = time.time()
+
+        if self.abi_start + self.abi_time > time.time():
+            self.speed = 10
+        else:
+            self.speed = 2
+
 
         for e in all_enemies:
             if pygame.sprite.collide_mask(self, e):
@@ -262,6 +298,18 @@ class KindKalmar(pygame.sprite.Sprite):
             drob = Drobinka(self.rect.x + 200, self.rect.y + 110, 1)
         all_bullets.add(drob)
 
+    # def abikukle(self):
+    #     self.abi_flag = time.time()
+    #     keys = pygame.key.get_pressed()
+        # if keys[self.up]:
+        #     self.rect.y -= 100
+        # if keys[self.down]:
+        #     self.rect.y += 100
+        # if keys[self.left]:
+        #     self.rect.x -= 100
+        # if keys[self.right]:
+        #     self.rect.x += 100
+
 
 class Drobinka(Bullet):  # 187x150
     def __init__(self, x, y, rev):
@@ -275,23 +323,19 @@ class Drobinka(Bullet):  # 187x150
         self.pseudo_rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
         self.damage = 15
-        self.time_to_death = pygame.time.get_ticks()
-        self.update()
+        self.time_to_death = time.time()
 
     def update(self):
         global score_count
-        if self.rect.left > W or self.rect.right < 0 or self.rect.bottom < 0 or self.rect.top > H:
-            self.kill()
-
         for e in all_enemies:
-            if pygame.sprite.collide_mask(self, e):
-                e.hp -= self.damage
-                if e.hp <= 0:
-                    score_count += e.cost
-                    print(score_count)
-                    e.kill()
-        if self.time_to_death + 200 < pygame.time.get_ticks():
-            self.kill()
+            if time.time() - self.time_to_death >= 0.4:
+                if pygame.sprite.collide_mask(self, e):
+                    e.hp -= self.damage
+                    if e.hp <= 0:
+                        score_count += e.cost
+                        print(score_count)
+                        e.kill()
+                self.kill()
 
 
 class MainEnemy(pygame.sprite.Sprite):
@@ -565,7 +609,7 @@ def kombo_check():
             rak.shoot(vy=-4)
             rak.shoot(vy=-5)
         print('YOU CHEATER!!!')
-    if last_moves[-3:] == triple_shot and rak.kd + 200 < pygame.time.get_ticks():
+    if last_moves[-3:] == triple_shot and rak.shot_flag + rak.kd < time.time():
         rak.shoot(vy=4)
         rak.shoot(vy=-4)
 
@@ -599,7 +643,6 @@ def settings_menu():
                         (W // 2 - 70,
                          150 + index * (30 + 10)))
 
-            # Отображение красного прямоугольника слева от текста для выделения выбранного действия
             if index == selected_index:
                 pygame.draw.rect(screen, (255, 0, 0),
                                  (W // 2 - 100,
@@ -611,6 +654,8 @@ def settings_menu():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                global game
+                game = False
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
@@ -641,7 +686,7 @@ def settings_menu():
                         text_surface = font.render(button_text, True, (0, 0, 0))
                         screen.blit(text_surface,
                                     (W // 2 - 70,
-                                     100 + index * (30 + 10)))
+                                     150 + index * (30 + 10)))
                     pygame.display.flip()
 
                     waiting_for_key = True
@@ -670,7 +715,7 @@ def settings_menu():
 
 all_bullets = pygame.sprite.Group()
 all_enemies = pygame.sprite.Group()
-rak = MainRak()
+rak = KindKalmar()
 FPS = 60
 game = True
 
